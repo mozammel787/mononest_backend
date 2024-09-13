@@ -31,15 +31,11 @@ async function run() {
         app.get("/product", async (req, res) => {
             const data = product.find();
             const result = await data.toArray();
-            // console.log(result);
-            
             res.send(result);
         });
 
         app.get("/product/:id", async (req, res) => {
             const id = req.params.id;
-            console.log(id);
-            
             const result = await product.findOne({ _id: new ObjectId(id) });
             res.send(result);
         });
