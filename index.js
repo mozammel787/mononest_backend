@@ -114,9 +114,9 @@ const run = async () => {
         });
 
         // Payment Routes
-        app.get("/payment", async (req, res) => {
+        app.get("/payment/:email", async (req, res) => {
             try {
-                const payments = await paymentsCollection.find().toArray();
+                const payments = await paymentsCollection.find({ customerEmail: req.params.email }).toArray();
                 res.json(payments);
             } catch (error) {
                 res.status(500).json({ message: error.message });
