@@ -2,7 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const jwt = require("jsonwebtoken");
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const stripe = require('stripe')('sk_test_4eC39HqLyjWDarjtT1zdp7dc');
 require("dotenv").config();
 
 const app = express();
@@ -53,22 +53,34 @@ async function run() {
 
         // Product Routes
         app.get("/product", async (req, res) => {
-            const data = product.find();
-            const result = await data.toArray();
-            res.send(result);
+            try {
+                const data = product.find();
+                const result = await data.toArray();
+                res.send(result);
+            } catch (error) {
+                res.status(500).send({ message: error.message });
+            }
         });
 
         app.get("/product/:id", async (req, res) => {
-            const id = req.params.id;
-            const result = await product.findOne({ _id: new ObjectId(id) });
-            res.send(result);
+            try {
+                const id = req.params.id;
+                const result = await product.findOne({ _id: new ObjectId(id) });
+                res.send(result);
+            } catch (error) {
+                res.status(500).send({ message: error.message });
+            }
         });
 
         // User Routes
         app.get("/user", async (req, res) => {
-            const data = user.find();
-            const result = await data.toArray();
-            res.send(result);
+            try {
+                const data = user.find();
+                const result = await data.toArray();
+                res.send(result);
+            } catch (error) {
+                res.status(500).send({ message: error.message });
+            }
         });
 
         app.post("/user", async (req, res) => {
@@ -106,50 +118,50 @@ async function run() {
             res.send(result);
         });
 
-        app.post("/create-payment-intent", async (req, res) => {
+        // Create Payment Intent
+        app.post('/create-payment-intent', async (req, res) => {
+            const { price } = req.body;
+      
+            if (!price || typeof price !== 'number') {
+              return res.status(400).json({ error: 'Invalid price' });
+            }
+      
             try {
-                const { items, totalAmount } = req.body;
-
-                if (!items || !totalAmount || typeof totalAmount !== 'number' || totalAmount <= 0) {
-                    return res.status(400).json({ error: 'Invalid input' });
-                }
-
-                const amount = totalAmount * 100; // Convert to cents
-
-                const paymentIntent = await stripe.paymentIntents.create({
-                    amount: amount,
-                    currency: 'usd',
-                    payment_method_types: ['card'],
-                });
-
-                res.json({ clientSecret: paymentIntent.client_secret, paymentIntentId: paymentIntent.id });
+              const paymentIntent = await stripe.paymentIntents.create({
+                amount: price * 100, // Amount in cents
+                currency: 'usd',
+              });
+      
+              res.json({ clientSecret: paymentIntent.client_secret });
             } catch (error) {
-                console.error('Error creating payment intent:', error);
-                res.status(500).json({ error: error.message });
+              console.error('Error creating payment intent:', error.message);
+              res.status(500).json({ error: 'Failed to create payment intent' });
             }
-        });
-
-        app.post("/payment", async (req, res) => {
-            const data = req.body;
-
-            if (!data || !data.paymentIntentId || !data.customerEmail || !Array.isArray(data.items) || !data.totalAmount) {
-                return res.status(400).json({ error: 'Missing required fields' });
+          });
+      
+          // Endpoint to handle successful payments
+          app.post('/payment', async (req, res) => {
+            const { paymentIntentId, customerEmail, items, totalAmount } = req.body;
+      
+            if (!paymentIntentId || !customerEmail || !items || !totalAmount) {
+              return res.status(400).json({ error: 'Missing required fields' });
             }
-
-            // Save payment details to the database
-            const result = await payment.insertOne({
-                ...data,
-                createdAt: new Date(),
-            });
-
-            res.send(result);
-        });
+      
+            const paymentData = {
+              paymentIntentId,
+              customerEmail,
+              items,
+              totalAmount,
+              createdAt: new Date(),
+            };
+      
+            const result = await paymentsCollection.insertOne(paymentData);
+            res.status(200).json(result);
+          });
 
         console.log("Connected to MongoDB!");
-
-    } finally {
-        // Ensure the client will close when you finish/error
-        await client.close();
+    } catch (error) {
+        console.error("Error connecting to MongoDB:", error);
     }
 }
 
