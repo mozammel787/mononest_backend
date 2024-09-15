@@ -2,7 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const jwt = require("jsonwebtoken");
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY||'sk_test_4eC39HqLyjWDarjtT1zdp7dc');  // Use environment variable for Stripe secret
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY || 'sk_test_4eC39HqLyjWDarjtT1zdp7dc');  // Use environment variable for Stripe secret
 require("dotenv").config();
 
 const app = express();
@@ -124,23 +124,29 @@ const run = async () => {
         });
 
         app.post('/create-payment-intent', async (req, res) => {
-            try {
-                const { price } = req.body;
-                if (typeof price !== 'number' || price <= 0) {
-                    return res.status(400).json({ error: 'Invalid price' });
-                }
-
-                const paymentIntent = await stripe.paymentIntents.create({
-                    amount: price * 100, // Amount in cents
-                    currency: 'usd',
-                });
-
-                res.json({ clientSecret: paymentIntent.client_secret });
-            } catch (error) {
-                console.error('Error creating payment intent:', error.message);
-                res.status(500).json({ error: 'Failed to create payment intent' });
+            const { price } = req.body;
+          
+            if (!price || typeof price !== 'number') {
+              return res.status(400).json({ error: 'Invalid price' });
             }
-        });
+          
+            // Convert price to cents and round it to avoid floating-point errors
+            const amountInCents = Math.round(price * 100);
+          
+            try {
+              const paymentIntent = await stripe.paymentIntents.create({
+                amount: amountInCents, // Amount in cents
+                currency: 'usd',
+              });
+          
+              res.json({ clientSecret: paymentIntent.client_secret });
+            } catch (error) {
+              console.error('Error creating payment intent:', error.message);
+              res.status(500).json({ error: 'Failed to create payment intent' });
+            }
+          });
+          
+
 
         app.post('/payment', async (req, res) => {
             try {
