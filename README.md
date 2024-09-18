@@ -67,7 +67,7 @@ This is a basic e-commerce website built using the MERN stack. The project inclu
 
 ### Live Link
 - Frontend: [mononest](https://mononest.vercel.app/)
-- Backend: [mononest-backend](https://mononest-backend.vercel.app/)
+- Backend: [mononest-backend](https://mononest-backend.onrender.com)
 
 ### Repo Link
 - Frontend: [mononest](https://github.com/mozammel787/MONONEST)
